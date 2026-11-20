@@ -41,3 +41,16 @@ example
 # generated native folders
 /ios
 /android
+
+# --- añadir al final de tu .gitignore ---
+.env*
+!env.example
+node_modules
+.expo
+.next
+coverage
+*.pem
+*.key
+*.keystore
+*.jks
+*firebase-adminsdk*.json
