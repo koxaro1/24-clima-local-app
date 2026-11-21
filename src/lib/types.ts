@@ -1,10 +1,28 @@
-export interface Ciudad {
-  id: number;
+﻿export interface Ciudad {
+  id: string;
   nombre: string;
   region: string;
   pais: string;
   lat: number;
   lng: number;
+}
+
+/** Resultado de /api/geocodificar (el id es numérico y no se guarda). */
+export interface Geo {
+  id: number;
+  nombre: string;
+  region?: string;
+  pais?: string;
+  lat: number;
+  lng: number;
+}
+
+export interface FavoritaRemota {
+  id: string;
+  nombre: string;
+  lat: number;
+  lng: number;
+  deleted_at: string | null;
 }
 
 export interface Clima {
@@ -14,8 +32,10 @@ export interface Clima {
   presion: number;
 }
 
+export const MAX_CIUDADES = 10;
+
 export const CIUDAD_POR_DEFECTO: Ciudad = {
-  id: 3674962,
+  id: 'por-defecto',
   nombre: 'Medellín',
   region: 'Antioquia',
   pais: 'Colombia',

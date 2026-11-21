@@ -1,21 +1,31 @@
-import { listarFavoritas } from './api';
-import { agregarCiudad } from './db';
+﻿import { guardarFavorita, listarFavoritas } from './api';
+import { agregarCiudad, borrarCiudad, listarCiudades } from './db';
 
-const esCiudad = (x: unknown): boolean => {
-  const c = x as Record<string, unknown>;
-  return (
-    typeof c.id === 'number' &&
-    typeof c.nombre === 'string' &&
-    typeof c.lat === 'number' &&
-    typeof c.lng === 'number'
-  );
-};
-
-/** Trae las favoritas del servidor y las guarda en SQLite. Sin red, no hace nada. */
+/**
+ * Trae las favoritas del servidor (las borradas se quitan) y sube las que
+ * solo existen en este teléfono. Sin red o sin sesión, no hace nada.
+ */
 export async function sincronizar(): Promise<void> {
   try {
     const remotas = await listarFavoritas();
-    for (const c of remotas.filter(esCiudad)) await agregarCiudad(c);
+    const conocidas = new Set(remotas.map((r) => r.id));
+    for (const r of remotas) {
+      if (r.deleted_at) {
+        await borrarCiudad(r.id);
+      } else {
+        await agregarCiudad({
+          id: r.id,
+          nombre: r.nombre,
+          region: '',
+          pais: '',
+          lat: r.lat,
+          lng: r.lng,
+        });
+      }
+    }
+    for (const c of await listarCiudades()) {
+      if (!conocidas.has(c.id)) await guardarFavorita(c);
+    }
   } catch {
     // Sin conexión o sin sesión: la app sigue con los datos locales.
   }
