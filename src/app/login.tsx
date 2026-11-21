@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { login, registro } from '../lib/api';
-import { saveToken } from '../lib/auth';
+import { saveSesion } from '../lib/auth';
 import { colores } from '../lib/theme';
 import { Boton } from '../components/Boton';
 
@@ -29,7 +29,7 @@ export default function Login() {
     try {
       const f = crear ? registro : login;
       const r = await f(email.trim(), clave);
-      await saveToken(r.token);
+      await saveSesion(r.token, r.refreshToken);
       router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo continuar.');

@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { clima } from '../../lib/api';
+import { clima, SesionExpirada } from '../../lib/api';
 import { getToken } from '../../lib/auth';
 import { listarCiudades } from '../../lib/db';
 import { sincronizar } from '../../lib/sync';
@@ -30,6 +30,10 @@ export default function Inicio() {
       setCiudad(c);
       setDatos(await clima(c.lat, c.lng));
     } catch (e) {
+      if (e instanceof SesionExpirada) {
+        router.replace('/login');
+        return;
+      }
       setError(e instanceof Error ? e.message : 'No se pudo cargar el clima.');
     } finally {
       setCargando(false);

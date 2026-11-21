@@ -1,16 +1,58 @@
 ﻿import { API_URL } from './config';
-import { getToken } from './auth';
+import { clearSesion, getRefresh, getToken, saveSesion } from './auth';
 import type { Ciudad, Clima, FavoritaRemota, Geo } from './types';
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export class SesionExpirada extends Error {
+  constructor() {
+    super('Sesión expirada');
+    this.name = 'SesionExpirada';
+  }
+}
+
+interface Sesion {
+  token?: string;
+  idToken?: string;
+  refreshToken?: string;
+}
+
+async function renovar(): Promise<boolean> {
+  const refresh = await getRefresh();
+  if (!refresh) return false;
+  try {
+    const res = await fetch(`${API_URL}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken: refresh }),
+    });
+    if (!res.ok) return false;
+    const s = (await res.json()) as Sesion;
+    const token = s.token ?? s.idToken;
+    if (!token) return false;
+    await saveSesion(token, s.refreshToken ?? refresh);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function llamar(path: string, init: RequestInit): Promise<Response> {
   const token = await getToken();
-  const res = await fetch(`${API_URL}${path}`, {
+  return fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
   });
+}
+
+async function request<T>(path: string, init: RequestInit = {}, reintento = true): Promise<T> {
+  const res = await llamar(path, init);
+  if (res.status === 401 && !path.startsWith('/api/auth/')) {
+    if (reintento && (await renovar())) return request<T>(path, init, false);
+    await clearSesion();
+    throw new SesionExpirada();
+  }
   const cuerpo: unknown = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg = (cuerpo as { error?: string }).error;
@@ -24,11 +66,16 @@ const enviar = (metodo: string, datos: unknown): RequestInit => ({
   body: JSON.stringify(datos),
 });
 
+interface Credenciales {
+  token: string;
+  refreshToken: string;
+}
+
 export const login = (email: string, password: string) =>
-  request<{ token: string }>('/api/auth/login', enviar('POST', { email, password }));
+  request<Credenciales>('/api/auth/login', enviar('POST', { email, password }));
 
 export const registro = (email: string, password: string) =>
-  request<{ token: string }>('/api/auth/registro', enviar('POST', { email, password }));
+  request<Credenciales>('/api/auth/registro', enviar('POST', { email, password }));
 
 export async function clima(lat: number, lng: number): Promise<Clima> {
   const r = await request<{ actual: Clima }>(`/api/clima?lat=${lat}&lng=${lng}`);
