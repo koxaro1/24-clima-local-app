@@ -16,3 +16,9 @@
 - **Qué falló:** las pantallas no se copiaron y el teléfono seguía mostrando la plantilla de Expo. El check pasaba porque faltaba código, no porque estuviera bien.
 - **Qué corregí:** borré index.tsx y explore.tsx de la plantilla, copié las pantallas a mano y regeneré los tipos de rutas con expo start -c.
 - **Lección:** que el check pase no prueba que la app funcione; hay que abrirla.
+
+## Corrección: la sesión vencía y la app se quedaba en «No autenticado»
+- **Qué propuso la IA:** guardar solo el token de Firebase y mandarlo en cada petición.
+- **Qué falló:** el token dura 1 hora. Al día siguiente la app mostraba el clima viejo de SQLite y «No autenticado», sin forma de volver al login.
+- **Cómo lo detecté:** al abrir el APK la mañana siguiente.
+- **Qué corregí:** guardar también el refreshToken, renovar el token ante un 401 y, si no se puede, borrar la sesión y volver al login.
